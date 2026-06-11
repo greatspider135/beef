@@ -1,12 +1,12 @@
 #
-# Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-# Browser Exploitation Framework (BeEF) - http://beefproject.com
+# Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+# Browser Exploitation Framework (BeEF) - https://beefproject.com
 # See the file 'doc/COPYING' for copying permission
 #
 # BeEF Configuration file
 
 beef:
-    version: '0.5.4.0-pre'
+    version: '0.6.0.0'
     # More verbose messages (server-side)
     debug: false
     # More verbose messages (client-side)
@@ -45,22 +45,23 @@ beef:
         # Enabling WebSockets is generally better (beef.websocket.enable)
         xhr_poll_timeout: 1000
 
-        # Host Name / Domain Name
-        # If you want BeEF to be accessible via hostname or domain name (ie, DynDNS),
-        # These settings will be used to create a public facing URL
-        # This public facing URL will be used for all hook related calls
-        # set the public setting below:
-        # public:
-        #     host: "" # public hostname/IP address
-        #     port: "" # public port will default to 80 if no https 443 if https 
-                      # and local if not set but there is a public host
-        #     https: false # true/false
+        # Public Domain Name / Reverse Proxy / Port Forwarding
+        #
+        # In order for the client-side BeEF JavaScript hook to be able to connect to BeEF,
+        # the hook JavaScript needs to be generated with the correct connect-back details.
+        #
+        # If you're using a public domain name, reverse proxy, or port forwarding you must
+        # configure the public-facing connection details here.
 
-        # Reverse Proxy / NAT
-        # If you want BeEF to be accessible behind a reverse proxy or NAT,
-        #   set both the publicly accessible hostname/IP address and port below:
-        # NOTE: Allowing the reverse proxy will enable a vulnerability where the ui/panel can be spoofed
-        #   by altering the X-FORWARDED-FOR ip address in the request header.
+        #public:
+        #    host: "beef.local" # public hostname/IP address
+        #    port: "443" # public port (443 if the public server is using HTTPS)
+        #    https: false # true/false
+
+        # If using any reverse proxy you should also set allow_reverse_proxy to true below.
+        # Note that this causes the BeEF server to trust the X-Forwarded-For HTTP header.
+        # If the BeEF server is directly accessible, clients can spoof their connecting
+        # IP address using this header to bypass the IP address permissions/exclusions.
         allow_reverse_proxy: false
 
         # Hook
@@ -93,8 +94,6 @@ beef:
         # Experimental HTTPS support for the hook / admin / all other Thin managed web services
         https:
             enable: false
-            # Enabled this config setting if you're external facing uri is using https
-            public_enabled: false
             # In production environments, be sure to use a valid certificate signed for the value
             # used in beef.http.public (the domain name of the server where you run BeEF)
             key: "beef_key.pem"
@@ -103,34 +102,14 @@ beef:
     database:
         file: "beef.db"
 
-    # Autorun Rule Engine
-    autorun:
-        # this is used when rule chain_mode type is nested-forward, needed as command results are checked via setInterval
-        # to ensure that we can wait for async command results. The timeout is needed to prevent infinite loops or eventually
-        # continue execution regardless of results.
-        # If you're chaining multiple async modules, and you expect them to complete in more than 5 seconds, increase the timeout.
-        result_poll_interval: 300
-        result_poll_timeout: 5000
-
-        # If the modules doesn't return status/results and timeout exceeded, continue anyway with the chain.
-        # This is useful to call modules (nested-forward chain mode) that are not returning their status/results.
-        continue_after_timeout: true
-
     # Enables DNS lookups on zombie IP addresses
     dns_hostname_lookup: false
 
     # IP Geolocation
-    # NOTE: requires MaxMind database. Run ./updated-geoipdb to install.
     geoip:
         enable: true
-        database: '/opt/GeoIP/GeoLite2-City.mmdb'
-
-    # Integration with PhishingFrenzy
-    # If enabled BeEF will try to get the UID parameter value from the hooked URI, as this is used by PhishingFrenzy
-    # to uniquely identify the victims. In this way you can easily associate phishing emails with hooked browser.
-    integration:
-        phishing_frenzy:
-            enable: false
+        # GeoLite2 City database created by MaxMind, available from https://www.maxmind.com
+        database: '/usr/share/GeoIP/GeoLite2-City.mmdb'
 
     # You may override default extension configuration parameters here
     # Note: additional experimental extensions are available in the 'extensions' directory
@@ -154,6 +133,6 @@ beef:
         metasploit:
             enable: false
         social_engineering:
-            enable: true
+            enable: false
         xssrays:
             enable: true

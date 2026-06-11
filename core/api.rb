@@ -1,6 +1,6 @@
 #
-# Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-# Browser Exploitation Framework (BeEF) - http://beefproject.com
+# Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+# Browser Exploitation Framework (BeEF) - https://beefproject.com
 # See the file 'doc/COPYING' for copying permission
 #
 
@@ -29,7 +29,7 @@ module BeEF
       #
       def register(owner, clss, method, params = [])
         unless verify_api_path(clss, method)
-          print_error "API Registrar: Attempted to register non-existant API method #{clss} :#{method}"
+          print_error "API Registrar: Attempted to register non-existent API method #{clss} :#{method}"
           return
         end
 
@@ -117,7 +117,7 @@ module BeEF
           next unless r['method'] == method
           next unless is_matched_params? r, params
 
-          owners << { :owner => r['owner'], :id => r['id'] }
+          owners << { owner: r['owner'], id: r['id'] }
         end
         owners
       end
@@ -184,25 +184,21 @@ module BeEF
         mods = get_owners(clss, mthd, args)
         return nil unless mods.length.positive?
 
-        unless verify_api_path(clss, mthd) && clss.ancestors[0].to_s > 'BeEF::API'
-          print_error "API Path not defined for Class: #{clss} method:#{method}"
+        unless verify_api_path(clss, mthd) && clss.ancestors.first.to_s.start_with?('BeEF::API')
+          print_error "API Path not defined for Class: #{clss} method: #{mthd}"
           return []
         end
 
         data = []
         method = get_api_path(clss, mthd)
         mods.each do |mod|
-          begin
-            # Only used for API Development (very verbose)
-            # print_info "API: #{mod} fired #{method}"
+          # Only used for API Development (very verbose)
+          # print_info "API: #{mod} fired #{method}"
 
-            result = mod[:owner].method(method).call(*args)
-            unless result.nil?
-              data << { :api_id => mod[:id], :data => result }
-            end
-          rescue => e
-            print_error "API Fire Error: #{e.message} in #{mod}.#{method}()"
-          end
+          result = mod[:owner].method(method).call(*args)
+          data << { api_id: mod[:id], data: result } unless result.nil?
+        rescue StandardError => e
+          print_error "API Fire Error: #{e.message} in #{mod}.#{method}()"
         end
 
         data

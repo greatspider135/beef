@@ -1,52 +1,50 @@
 #
-# Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-# Browser Exploitation Framework (BeEF) - http://beefproject.com
+# Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+# Browser Exploitation Framework (BeEF) - https://beefproject.com
 # See the file 'doc/COPYING' for copying permission
 #
 # Phonegap_prompt_user
 #
 
 class Phonegap_prompt_user < BeEF::Core::Command
-  
-    def self.options
-        return [{
-            'name' => 'title', 
-            'description' => 'Prompt title', 
-            'ui_label'=>'Title', 
-            'value' => 'Apple ID',
-            'width' => '300px'
-            
-            },{
-            'name' => 'question', 
-            'description' => 'Prompt question', 
-            'ui_label'=>'Question', 
-            'value' => 'Please enter your Apple ID password',
-            'width' => '300px'
-            },{
-            'name' => 'ans_yes', 
-            'description' => 'Prompt positive answer button label', 
-            'ui_label'=>'Yes', 
-            'value' => 'Submit',
-            'width' => '100px'
-            },{
-            'name' => 'ans_no', 
-            'description' => 'Prompt negative answer button label', 
-            'ui_label'=>'No', 
-            'value' => 'Cancel',
-            'width' => '100px'
-            },{
-            'name' => 'text',
-            'description' => 'Default text to display',
-            'ui_label'=>'Default text',
-            'value' => 'Password',
-            'width' => '100px'
-            }]
+  def self.options
+    [{
+      'name' => 'title',
+      'description' => 'Prompt title',
+      'ui_label' => 'Title',
+      'value' => 'Apple ID',
+      'width' => '300px'
+
+    }, {
+      'name' => 'question',
+      'description' => 'Prompt question',
+      'ui_label' => 'Question',
+      'value' => 'Please enter your Apple ID password',
+      'width' => '300px'
+    }, {
+      'name' => 'ans_yes',
+      'description' => 'Prompt positive answer button label',
+      'ui_label' => 'Yes',
+      'value' => 'Submit',
+      'width' => '100px'
+    }, {
+      'name' => 'ans_no',
+      'description' => 'Prompt negative answer button label',
+      'ui_label' => 'No',
+      'value' => 'Cancel',
+      'width' => '100px'
+    }, {
+      'name' => 'text',
+      'description' => 'Default text to display',
+      'ui_label' => 'Default text',
+      'value' => 'Password',
+      'width' => '100px'
+    }]
   end
 
   def callback
     content = {}
     content['Result'] = @datastore['result']
     save content
-  end 
-
+  end
 end

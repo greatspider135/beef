@@ -420,20 +420,25 @@ end
 # add a rule
 def dns_add_rule(dns_pattern, dns_resource, dns_response)
   dns_response = [dns_response] if dns_response.is_a?(String)
-  begin
-    print_verbose "Adding DNS rule [pattern: #{dns_pattern}, resource: #{dns_resource}, response: #{dns_response}]"
-    response = RestClient.post "#{@url}dns/rule?token=#{@token}", {
-      'pattern' => dns_pattern,
-      'resource' => dns_resource,
-      'response' => dns_response }.to_json,
-    :content_type => :json,
-    :accept => :json
-    details = JSON.parse(response.body)
-    print_good "Added rule [id: #{details['id']}]"
-    details
-  rescue => e
-    print_error "Could not add DNS rule: #{e.message}"
+  print_verbose "Adding DNS rule [pattern: #{dns_pattern}, resource: #{dns_resource}, response: #{dns_response}]"
+  response = RestClient.post "#{@url}dns/rule?token=#{@token}", {
+    'pattern' => dns_pattern,
+    'resource' => dns_resource,
+    'response' => dns_response }.to_json,
+  :content_type => :json,
+  :accept => :json
+  details = JSON.parse(response.body)
+  rule_id = details['id']
+
+  if rule_id.nil?
+    print_error("Could not add DNS rule: #{details['error']}")
+    return details
   end
+
+  print_good "Added rule [id: #{details['id']}]"
+  details
+rescue => e
+  print_error "Could not add DNS rule: #{e.message}"
 end
 
 # get rule details
@@ -451,15 +456,15 @@ end
 
 # delete a rule
 def dns_delete_rule(id)
-  begin
-    response = RestClient.delete "#{@url}dns/rule/#{id}?token=#{@token}"
-    details = JSON.parse(response.body)
-    print_good "Deleted rule [id: #{id}]"
-    details
-  rescue => e
-    print_error "Could not delete DNS rule: #{e.message}"
-  end
+  response = RestClient.delete "#{@url}dns/rule/#{id}?token=#{@token}"
+  details = JSON.parse(response.body)
+  print_good "Deleted rule [id: #{id}]"
+  details
+rescue => e
+  print_error "Could not delete DNS rule: #{e.message}"
 end
+
+
 
 
 ################################################################################

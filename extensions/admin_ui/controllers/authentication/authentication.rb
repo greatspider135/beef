@@ -1,132 +1,125 @@
 #
-# Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-# Browser Exploitation Framework (BeEF) - http://beefproject.com
+# Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+# Browser Exploitation Framework (BeEF) - https://beefproject.com
 # See the file 'doc/COPYING' for copying permission
 #
 module BeEF
-module Extension
-module AdminUI
-module Controllers
+  module Extension
+    module AdminUI
+      module Controllers
+        #
+        # The authentication web page for BeEF.
+        #
+        class Authentication < BeEF::Extension::AdminUI::HttpController
+          #
+          # Constructor
+          #
+          def initialize
+            super({
+              'paths' => {
+                '/' => method(:index),
+                '/login' => method(:login),
+                '/logout' => method(:logout)
+              }
+            })
 
-#
-# The authentication web page for BeEF.
-#
-class Authentication < BeEF::Extension::AdminUI::HttpController
+            @session = BeEF::Extension::AdminUI::Session.instance
+          end
 
-  #
-  # Constructor
-  #
-  def initialize
-    super({
-      'paths' =>  {
-        '/'        => method(:index),
-        '/login'   => method(:login),
-        '/logout'  => method(:logout)
-      }
-    })
+          # Function managing the index web page
+          def index
+            @headers['Content-Type'] = 'text/html; charset=UTF-8'
+            @headers['X-Frame-Options'] = 'sameorigin'
+          end
 
-    @session = BeEF::Extension::AdminUI::Session.instance
-  end
+          #
+          # Function managing the login
+          #
+          def login
+            username = @params['username-cfrm'] || ''
+            password = @params['password-cfrm'] || ''
+            @headers['Content-Type'] = 'application/json; charset=UTF-8'
+            @headers['X-Frame-Options'] = 'sameorigin'
+            @body = { success: false }.to_json
 
-  # Function managing the index web page
-  def index
-    @headers['Content-Type']='text/html; charset=UTF-8'
-    @headers['X-Frame-Options']='sameorigin'
-  end
+            config = BeEF::Core::Configuration.instance
+            ua_ip = config.get('beef.http.allow_reverse_proxy') ? @request.ip : @request.get_header('REMOTE_ADDR')
 
-  #
-  # Function managing the login
-  #
-  def login
+            # check if source IP address is permitted to authenticate
+            unless permitted_source?(ua_ip)
+              BeEF::Core::Logger.instance.register('Authentication', "IP source address (#{ua_ip}) attempted to authenticate but is not within permitted subnet.")
+              return
+            end
 
-    username = @params['username-cfrm'] || ''
-    password = @params['password-cfrm'] || ''
-    config = BeEF::Core::Configuration.instance
-    @headers['Content-Type']='application/json; charset=UTF-8'
-    @headers['X-Frame-Options']='sameorigin'
-    if !config.get("beef.http.allow_reverse_proxy")
-      ua_ip = @request.get_header('REMOTE_ADDR')
-    else
-      ua_ip = @request.ip # get client ip address
+            # check if under brute force attack
+            return unless BeEF::Core::Rest.timeout?('beef.extension.admin_ui.login_fail_delay',
+                                                    @session.get_auth_timestamp,
+                                                    ->(time) { @session.set_auth_timestamp(time) })
+
+            # check username and password
+            unless username.eql?(config.get('beef.credentials.user')) && password.eql?(config.get('beef.credentials.passwd'))
+              BeEF::Core::Logger.instance.register('Authentication', "User with ip #{ua_ip} has failed to authenticate in the application.")
+              return
+            end
+
+            # establish an authenticated session
+            @session.set_logged_in(ua_ip)
+            session_cookie_name = config.get('beef.extension.admin_ui.session_cookie_name') # get session cookie name
+            Rack::Utils.set_cookie_header!(@headers, session_cookie_name, { value: @session.get_id, path: '/', httponly: true })
+
+            BeEF::Core::Logger.instance.register('Authentication', "User with ip #{ua_ip} has successfully authenticated in the application.")
+            @body = { success: true }.to_json
+          end
+
+          #
+          # Function managing the logout
+          #
+          def logout
+            @body = { success: true }.to_json
+
+            unless @session.valid_nonce?(@request)
+              print_error 'invalid nonce'
+              return
+            end
+
+            unless @session.valid_session?(@request)
+              print_error 'invalid session'
+              return
+            end
+
+            @headers['Content-Type'] = 'application/json; charset=UTF-8'
+            @headers['X-Frame-Options'] = 'sameorigin'
+
+            # set the session to be log out
+            @session.set_logged_out
+
+            # clean up UA and expire the session cookie
+            config = BeEF::Core::Configuration.instance
+            session_cookie_name = config.get('beef.extension.admin_ui.session_cookie_name') # get session cookie name
+            Rack::Utils.set_cookie_header!(@headers, session_cookie_name, { value: '', path: '/', httponly: true, expires: Time.now })
+
+            ua_ip = config.get('beef.http.allow_reverse_proxy') ? @request.ip : @request.get_header('REMOTE_ADDR')
+            BeEF::Core::Logger.instance.register('Authentication', "User with ip #{ua_ip} has successfully logged out.")
+          end
+
+          #
+          # Check the UI browser source IP is within the permitted subnet
+          #
+          def permitted_source?(ip)
+            return false unless BeEF::Filters.is_valid_ip?(ip)
+
+            permitted_ui_subnet = BeEF::Core::Configuration.instance.get('beef.restrictions.permitted_ui_subnet')
+            return false if permitted_ui_subnet.nil?
+            return false if permitted_ui_subnet.empty?
+
+            permitted_ui_subnet.each do |subnet|
+              return true if IPAddr.new(subnet).include?(ip)
+            end
+
+            false
+          end
+        end
+      end
     end
-    @body = '{ success : false }' # attempt to fail closed
-    # check if source IP address is permitted to authenticate
-    if not permitted_source?(ua_ip)
-      BeEF::Core::Logger.instance.register('Authentication', "IP source address (#{@request.ip}) attempted to authenticate but is not within permitted subnet.")
-      return
-    end
-
-    # check if under brute force attack
-    return if not BeEF::Core::Rest.timeout?('beef.extension.admin_ui.login_fail_delay',
-                                            @session.get_auth_timestamp(),
-                                            lambda { |time| @session.set_auth_timestamp(time)})
-
-    # check username and password
-    if not (username.eql? config.get('beef.credentials.user') and password.eql? config.get('beef.credentials.passwd') )
-      BeEF::Core::Logger.instance.register('Authentication', "User with ip #{@request.ip} has failed to authenticate in the application.")
-      return
-    end
-
-    # establish an authenticated session
-
-    # set up session and set it logged in
-    @session.set_logged_in(ua_ip)
-
-    # create session cookie
-    session_cookie_name = config.get('beef.extension.admin_ui.session_cookie_name') # get session cookie name
-    Rack::Utils.set_cookie_header!(@headers, session_cookie_name, {:value => @session.get_id, :path => "/", :httponly => true})
-
-    BeEF::Core::Logger.instance.register('Authentication', "User with ip #{@request.ip} has successfully authenticated in the application.")
-    @body = "{ success : true }"
   end
-
-  #
-  # Function managing the logout
-  #
-  def logout
-
-    # test if session is unauth'd
-    (print_error "invalid nonce";return @body = "{ success : true }") if not @session.valid_nonce?(@request)
-    (print_error "invalid session";return @body = "{ success : true }") if not @session.valid_session?(@request)
-
-    @headers['Content-Type']='application/json; charset=UTF-8'
-    @headers['X-Frame-Options']='sameorigin'
-
-    # set the session to be log out
-    @session.set_logged_out
-
-    # clean up UA and expire the session cookie
-    config = BeEF::Core::Configuration.instance
-    session_cookie_name = config.get('beef.extension.admin_ui.session_cookie_name') # get session cookie name
-    Rack::Utils.set_cookie_header!(@headers, session_cookie_name, {:value => "", :path => "/", :httponly => true, expires: Time.now})
-
-    BeEF::Core::Logger.instance.register('Authentication', "User with ip #{@request.ip} has successfully logged out.")
-    @body = "{ success : true }"
-
-  end
-
-  #
-  # Check the UI browser source IP is within the permitted subnet
-  #
-  def permitted_source?(ip)
-    # test if supplied IP address is valid
-    return false unless BeEF::Filters::is_valid_ip?(ip)
-
-    # get permitted subnets
-    permitted_ui_subnet = BeEF::Core::Configuration.instance.get("beef.restrictions.permitted_ui_subnet")
-    return false if permitted_ui_subnet.nil?
-    return false if permitted_ui_subnet.empty?
-
-    # test if ip within subnets
-    permitted_ui_subnet.each do |subnet|
-      return true if IPAddr.new(subnet).include?(ip)
-    end
-
-    false
-  end
-end
-
-end
-end
-end
 end

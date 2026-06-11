@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-// Browser Exploitation Framework (BeEF) - http://beefproject.com
+// Copyright (c) 2006-2026Wade Alcorn - wade@bindshell.net
+// Browser Exploitation Framework (BeEF) - https://beefproject.com
 // See the file 'doc/COPYING' for copying permission
 //
 
@@ -13,7 +13,7 @@ beef.execute(function() {
     beef.debug("[Spoof Address Bar (data)] Redirecting to data URL...");
   } catch (e) {
     beef.debug("[Spoof Address Bar (data)] could not redirect: "+e.message)
-    beef.net.send("<%= @command_url %>", <%= @command_id %>, "fail=something went horribly wrong: " + e.message, beef.are.status_error());
+    beef.net.send("<%= @command_url %>", <%= @command_id %>, "fail=something went horribly wrong: " + e.message, beef.status.error());
   }
 
 });

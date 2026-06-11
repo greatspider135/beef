@@ -1,60 +1,59 @@
 #
-# Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-# Browser Exploitation Framework (BeEF) - http://beefproject.com
+# Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+# Browser Exploitation Framework (BeEF) - https://beefproject.com
 # See the file 'doc/COPYING' for copying permission
 #
 
 module BeEF
-module Core
-  class GeoIp
-    include Singleton
-    
-    def initialize
-      @config = BeEF::Core::Configuration.instance
-      @enabled = @config.get('beef.geoip.enable') ? true : false
+  module Core
+    class GeoIp
+      include Singleton
 
-      return unless @enabled
+      def initialize
+        @config = BeEF::Core::Configuration.instance
+        @enabled = @config.get('beef.geoip.enable') ? true : false
 
-      geoip_file = @config.get('beef.geoip.database')
+        return unless @enabled
 
-      unless File.exists? geoip_file
-        print_error "[GeoIP] Could not find MaxMind GeoIP database: '#{geoip_file}'"
-        print_more "Run ./update-geoipdb to install"
+        geoip_file = @config.get('beef.geoip.database')
+
+        unless File.exist? geoip_file
+          BeEF::Core::Logger.instance.register('System', "[GeoIP] Could not find MaxMind GeoIP database: '#{geoip_file}'")
+          @enabled = false
+          return
+        end
+
+        require 'maxmind/db'
+        @geoip_reader = MaxMind::DB.new(geoip_file, mode: MaxMind::DB::MODE_MEMORY)
+        @geoip_reader.freeze
+      rescue StandardError => e
+        print_error "[GeoIP] Failed to load GeoIP database: #{e.message}"
         @enabled = false
-        return
       end
 
-      require 'maxmind/db'
-      @geoip_reader = MaxMind::DB.new(geoip_file, mode: MaxMind::DB::MODE_MEMORY)
-      @geoip_reader.freeze
-    rescue => e
-      print_error "[GeoIP] Failed to load GeoIP database: #{e.message}"
-      @enabled = false
-    end
+      #
+      # Check if GeoIP functionality is enabled and functional
+      #
+      # @return [Boolean] GeoIP functionality enabled?
+      #
+      def enabled?
+        @enabled
+      end
 
-    #
-    # Check if GeoIP functionality is enabled and functional
-    #
-    # @return [Boolean] GeoIP functionality enabled?
-    #
-    def enabled?
-      @enabled
-    end
+      #
+      # Search the MaxMind GeoLite2 database for the specified IP address
+      #
+      # @param [String] The IP address to lookup
+      #
+      # @return [Hash] IP address lookup results
+      #
+      def lookup(ip)
+        raise TypeError, '"ip" needs to be a string' unless ip.is_a?(String)
 
-    #
-    # Search the MaxMind GeoLite2 database for the specified IP address
-    #
-    # @param [String] The IP address to lookup
-    #
-    # @return [Hash] IP address lookup results
-    #
-    def lookup(ip)
-      raise TypeError, '"ip" needs to be a string' unless ip.string?
+        return unless @enabled
 
-      return unless @enabled
-
-      @geoip_reader.get(ip)
+        @geoip_reader.get(ip)
+      end
     end
   end
-end
 end

@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 
 #
-# Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-# Browser Exploitation Framework (BeEF) - http://beefproject.com
+# Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+# Browser Exploitation Framework (BeEF) - https://beefproject.com
 # See the file 'doc/COPYING' for copying permission
 #
 
@@ -12,11 +12,12 @@
 $VERBOSE = nil
 
 #
-# @note Version check to ensure BeEF is running Ruby 2.5+
+# @note Version check to ensure BeEF is running Ruby 3.0+
 #
-if RUBY_VERSION < '2.5'
+min_ruby_version = '3.0'
+if RUBY_VERSION < min_ruby_version
   puts
-  puts "Ruby version #{RUBY_VERSION} is no longer supported. Please upgrade to Ruby version 2.5 or later."
+  puts "Ruby version #{RUBY_VERSION} is no longer supported. Please upgrade to Ruby version #{min_ruby_version} or later."
   puts
   exit 1
 end
@@ -38,6 +39,10 @@ $root_dir = File.join(File.expand_path(File.dirname(File.realpath(__FILE__))), '
 $:.unshift($root_dir)
 $home_dir = File.expand_path("#{Dir.home}/.beef/", __FILE__).freeze
 
+# @note Parse BeEF CLI options early (prevents Rack help from taking over)
+require 'core/main/console/commandline'
+BeEF::Core::Console::CommandLine.parse
+
 #
 # @note Require core loader
 #
@@ -47,21 +52,21 @@ require 'timeout'
 #
 # @note Ask user if they would like to update beef
 #
-
-if BeEF::Core::Console::CommandLine.parse[:update_disabled] == false
+if File.exist?("#{$root_dir}git") && BeEF::Core::Console::CommandLine.parse[:update_disabled] == false
   if BeEF::Core::Console::CommandLine.parse[:update_auto] == true
-  print "Pulling latest BeEF repository and updating"
-  `git pull && bundle`  
-  else
+    print 'Checking latest BeEF repository and updating'
+    `git pull && bundle`
+  elsif `git rev-parse master` != `git rev-parse origin/master`
     begin
-      answer = Timeout::timeout(5) do
-        print "Would you like to check and download the latest BeEF update? y/n: " 
+      Timeout.timeout(5) do
+        puts '-- BeEF Update Available --'
+        print 'Would you like to update to lastest version? y/n: '
         response = gets
-        `git pull && bundle` if response.strip == 'y' 
+        `git pull && bundle` if response&.strip == 'y'
       end
-      rescue Timeout::Error
-        puts "\nUpdate Skipped with input timeout"
-      end
+    rescue Timeout::Error
+      puts "\nUpdate Skipped with input timeout"
+    end
   end
 end
 
@@ -183,22 +188,31 @@ db_file = config.get('beef.database.file')
 # @note Resets the database if the -x flag was passed
 if BeEF::Core::Console::CommandLine.parse[:resetdb]
   print_info 'Resetting the database for BeEF.'
-  File.delete(db_file) if File.exists?(db_file)
+  begin
+    File.delete(db_file) if File.exist?(db_file)
+  rescue => e
+    print_error("Could not remove '#{db_file}' database file: #{e.message}")
+    exit(1)
+  end
 end
+
 # Connect to DB
 ActiveRecord::Base.logger = nil
-OTR::ActiveRecord.migrations_paths = [File.join('core', 'main', 'ar-migrations')]
 OTR::ActiveRecord.configure_from_hash!(adapter:'sqlite3', database:db_file)
 # otr-activerecord require you to manually establish the connection with the following line
 #Also a check to confirm that the correct Gem version is installed to require it, likely easier for old systems.
 if Gem.loaded_specs['otr-activerecord'].version > Gem::Version.create('1.4.2')
   OTR::ActiveRecord.establish_connection!
 end
+
 # Migrate (if required)
-context = ActiveRecord::Migration.new.migration_context
+ActiveRecord::Migration.verbose = false # silence activerecord migration stdout messages
+ActiveRecord::Migrator.migrations_paths = [File.join('core', 'main', 'ar-migrations')]
+context = ActiveRecord::MigrationContext.new(ActiveRecord::Migrator.migrations_paths)
 if context.needs_migration?
-  ActiveRecord::Migrator.new(:up, context.migrations, context.schema_migration).migrate
+  ActiveRecord::Migrator.new(:up, context.migrations, context.schema_migration, context.internal_metadata).migrate
 end
+
 #
 # @note Extensions may take a moment to load, thus we print out a please wait message
 #
@@ -207,13 +221,25 @@ print_info 'BeEF is loading. Wait a few seconds...'
 #
 # @note Execute migration procedure, checks for new modules
 #
-BeEF::Core::Migration.instance.update_db!
+begin
+  BeEF::Core::Migration.instance.update_db!
+rescue => e
+  print_error("Could not update '#{db_file}' database file: #{e.message}")
+  exit(1)
+end
 
 #
 # @note Create HTTP Server and prepare it to run
 #
 http_hook_server = BeEF::Core::Server.instance
 http_hook_server.prepare
+
+begin
+  BeEF::Core::Logger.instance.register('System', 'BeEF server started')
+rescue => e
+  print_error("Database connection failed: #{e.message}")
+  exit(1)
+end
 
 #
 # @note Prints information back to the user before running the server
@@ -222,6 +248,8 @@ BeEF::Core::Console::Banners.print_loaded_extensions
 BeEF::Core::Console::Banners.print_loaded_modules
 BeEF::Core::Console::Banners.print_network_interfaces_count
 BeEF::Core::Console::Banners.print_network_interfaces_routes
+BeEF::Core::Console::Banners.print_http_proxy
+BeEF::Core::Console::Banners.print_dns
 
 #
 # @note Prints the API key needed to use the RESTful API
@@ -237,11 +265,6 @@ BeEF::Core::GeoIp.instance
 # @note Call the API method 'pre_http_start'
 #
 BeEF::API::Registrar.instance.fire(BeEF::API::Server, 'pre_http_start', http_hook_server)
-
-#
-# @note Load any ARE (Autorun Rule Engine) rules scanning the <beef_root>/arerules/enabled directory
-#
-BeEF::Core::AutorunEngine::RuleLoader.instance.load_directory
 
 #
 # @note Start the WebSocket server

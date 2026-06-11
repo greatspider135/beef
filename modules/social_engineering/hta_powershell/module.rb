@@ -1,6 +1,6 @@
 #
-# Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-# Browser Exploitation Framework (BeEF) - http://beefproject.com
+# Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+# Browser Exploitation Framework (BeEF) - https://beefproject.com
 # See the file 'doc/COPYING' for copying permission
 #
 class Hta_powershell < BeEF::Core::Command
@@ -9,7 +9,7 @@ class Hta_powershell < BeEF::Core::Command
     ps_url = @config.get('beef.extension.social_engineering.powershell.powershell_handler_url')
 
     [
-      { 'name' => 'domain', 'ui_label' => 'Serving Domain (BeEF server)', 'value' => @configuration.beef_url_str },
+      { 'name' => 'domain', 'ui_label' => 'Serving Domain (BeEF server)', 'value' => @config.beef_url_str },
       { 'name' => 'ps_url', 'ui_label' => 'Powershell/HTA handler', 'value' => ps_url }
     ]
   end

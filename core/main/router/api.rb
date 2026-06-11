@@ -1,12 +1,11 @@
 #
-# Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-# Browser Exploitation Framework (BeEF) - http://beefproject.com
+# Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+# Browser Exploitation Framework (BeEF) - https://beefproject.com
 # See the file 'doc/COPYING' for copying permission
 #
 module BeEF
   module Core
     module Router
-
       module RegisterRouterHandler
         def self.mount_handler(server)
           server.mount('/', BeEF::Core::Router::Router.new)
@@ -14,7 +13,6 @@ module BeEF
       end
 
       BeEF::API::Registrar.instance.register(BeEF::Core::Router::RegisterRouterHandler, BeEF::API::Server, 'mount_handler')
-
     end
   end
 end

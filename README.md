@@ -1,7 +1,7 @@
 ===============================================================================
 
-    Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-    Browser Exploitation Framework (BeEF) - http://beefproject.com
+    Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+    Browser Exploitation Framework (BeEF) - https://beefproject.com
     See the file 'doc/COPYING' for copying permission
 
 ===============================================================================
@@ -30,12 +30,13 @@ __Security Bugs:__ security@beefproject.com
 
 __Twitter:__ [@beefproject](https://twitter.com/beefproject)
 
+__Discord:__ https://discord.gg/25wT2P8pwx
 
 Requirements
 ------------
 
 * Operating System: Mac OSX 10.5.0 or higher / modern Linux. Note: Windows is not supported.
-* [Ruby](http://ruby-lang.org): 2.5 or newer
+* [Ruby](https://www.ruby-lang.org): 3.0 or newer
 * [SQLite](http://sqlite.org): 3.x
 * [Node.js](https://nodejs.org): 10 or newer
 * The gems listed in the Gemfile: https://github.com/beefproject/beef/blob/master/Gemfile

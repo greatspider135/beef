@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-// Browser Exploitation Framework (BeEF) - http://beefproject.com
+// Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+// Browser Exploitation Framework (BeEF) - https://beefproject.com
 // See the file 'doc/COPYING' for copying permission
 //
 
@@ -79,7 +79,7 @@ Ext.extend(zombiesTreeList, Ext.tree.TreePanel, {
   end
   if (BeEF::Core::Configuration.instance.get("beef.extension.xssrays.enable"))
     context_menu << {
-      id: 'xssrays_hooked_domain',
+      id: 'xssrays_hooked_origin',
       text: 'Launch XssRays on Hooked Domain',
       iconCls: 'zombie-tree-ctxMenu-xssrays'
     }
@@ -121,7 +121,7 @@ Ext.extend(zombiesTreeList, Ext.tree.TreePanel, {
                                 jsonData: {'hb_id': escape(hb_id)}
                             });
                           break;
-                       case 'xssrays_hooked_domain':
+                       case 'xssrays_hooked_origin':
                            Ext.Ajax.request({
                                 url: '/api/xssrays/scan/' + escape(hb_id) + '?token=' + beefwui.get_rest_token(),
                                 method: 'POST'
@@ -240,7 +240,7 @@ try{
 			this.addZombie(offline_hooked_browser, offline_hooked_browser["online"], offline_hooked_browser["checkbox"]);
 		}, this)
 		
-		//expands the online hooked browser branch
+		//expands the offline hooked browser branch
 		if(this.offline_hooked_browsers_treenode.childNodes.length > 0)
 			this.offline_hooked_browsers_treenode.expand(true);
 	},
@@ -467,24 +467,26 @@ try{
 		}
 
 		// set zombie hover balloon text for tree node
+		// Use Ext.util.Format.htmlEncode() to prevent XSS via malicious browser properties
+		var encode = Ext.util.Format.htmlEncode;
 		var balloon_text = "";
-		balloon_text += hooked_browser.ip;
+		balloon_text += encode(hooked_browser.ip);
 		balloon_text += "<hr/>"
 		balloon_text += "<img width='13px' height='13px' class='zombie-tree-icon' src='<%= @base_path %>/media/images/favicon.png' /> ";
-		balloon_text += "Origin: " + hooked_browser.domain + ":" + hooked_browser.port;
+		balloon_text += "Origin: " + encode(hooked_browser.domain) + ":" + encode(hooked_browser.port);
 		balloon_text += "<br/>";
 		balloon_text += "<img width='13px' height='13px' class='zombie-tree-icon' src='<%= @base_path %>/media/images/icons/" + escape(browser_icon) + "' /> ";
-		balloon_text += "Browser: " + hooked_browser.browser_name + " " + hooked_browser.browser_version;
+		balloon_text += "Browser: " + encode(hooked_browser.browser_name) + " " + encode(hooked_browser.browser_version);
 		balloon_text += "<br/>";
 		balloon_text += " <img width='13px' height='13px' class='zombie-tree-icon' src='<%= @base_path %>/media/images/icons/" + escape(os_icon) + "' /> ";
 		if (hooked_browser.os_version == 'Unknown') {
-		  balloon_text += "OS: " + hooked_browser.os_name;
+		  balloon_text += "OS: " + encode(hooked_browser.os_name);
 		} else {
-		  balloon_text += "OS: " + hooked_browser.os_name + ' ' + hooked_browser.os_version;
+		  balloon_text += "OS: " + encode(hooked_browser.os_name) + ' ' + encode(hooked_browser.os_version);
 		}
 		balloon_text += "<br/>";
 		balloon_text += " <img width='13px' height='13px' class='zombie-tree-icon' src='<%= @base_path %>/media/images/icons/" + escape(hw_icon) + "' /> ";
-		balloon_text += "Hardware: " + hooked_browser.hw_name;
+		balloon_text += "Hardware: " + encode(hooked_browser.hw_name);
 		balloon_text += "<br/>";
 
 		if ( !hooked_browser.country || !hooked_browser.country_code || hooked_browser.country == 'Unknown' ) {
@@ -492,11 +494,11 @@ try{
 			balloon_text += "Location: Unknown";
 		} else {
 			balloon_text += " <img width='13px' height='13px' class='zombie-tree-icon' src='<%= @base_path %>/media/images/icons/country-squared/" + escape(hooked_browser.country_code.toLowerCase()) + ".svg' /> ";
-			balloon_text += "Location: " + hooked_browser.city + ", " + hooked_browser.country;
+			balloon_text += "Location: " + encode(hooked_browser.city) + ", " + encode(hooked_browser.country);
 		}
 
 		balloon_text += "<hr/>";
-		balloon_text += "Local Date: " + hooked_browser.date;
+		balloon_text += "Local Date: " + encode(hooked_browser.date);
 		hooked_browser.qtip = balloon_text;
 
 		// set zombie text label for tree node
@@ -511,7 +513,7 @@ try{
 			text += "<img width='13px' height='13px' class='zombie-tree-icon' src='<%= @base_path %>/media/images/icons/country-squared/" + escape(hooked_browser.country_code.toLowerCase()) + ".svg' /> ";
 		}
 
-		text += hooked_browser.ip;
+		text += encode(hooked_browser.ip);
 		hooked_browser.text = text;
 
 		//save a new online HB

@@ -1,6 +1,6 @@
 #
-# Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-# Browser Exploitation Framework (BeEF) - http://beefproject.com
+# Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+# Browser Exploitation Framework (BeEF) - https://beefproject.com
 # See the file 'doc/COPYING' for copying permission
 #
 # BeEF Configuration file
@@ -74,7 +74,7 @@ beef:
         # For multiple origins use: "http://browserhacker.com, http://domain2.com"
         restful_api:
             allow_cors: false
-            cors_allowed_domains: "http://browserhacker.com"
+            cors_allowed_origins: "http://browserhacker.com"
 
         # Prefer WebSockets over XHR-polling when possible.
         websocket:
@@ -106,19 +106,6 @@ beef:
     database:
         file: "beef.db"
 
-    # Autorun Rule Engine
-    autorun:
-        # this is used when rule chain_mode type is nested-forward, needed as command results are checked via setInterval
-        # to ensure that we can wait for async command results. The timeout is needed to prevent infinite loops or eventually
-        # continue execution regardless of results.
-        # If you're chaining multiple async modules, and you expect them to complete in more than 5 seconds, increase the timeout.
-        result_poll_interval: 300
-        result_poll_timeout: 5000
-
-        # If the modules doesn't return status/results and timeout exceeded, continue anyway with the chain.
-        # This is useful to call modules (nested-forward chain mode) that are not returning their status/results.
-        continue_after_timeout: true
-
     # Enables DNS lookups on zombie IP addresses
     dns_hostname_lookup: false
 
@@ -127,13 +114,6 @@ beef:
     geoip:
         enable: true
         database: '/opt/GeoIP/GeoLite2-City.mmdb'
-
-    # Integration with PhishingFrenzy
-    # If enabled BeEF will try to get the UID parameter value from the hooked URI, as this is used by PhishingFrenzy
-    # to uniquely identify the victims. In this way you can easily associate phishing emails with hooked browser.
-    integration:
-        phishing_frenzy:
-            enable: false
 
     # You may override default extension configuration parameters here
     # Note: additional experimental extensions are available in the 'extensions' directory

@@ -1,6 +1,6 @@
 #
-# Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-# Browser Exploitation Framework (BeEF) - http://beefproject.com
+# Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+# Browser Exploitation Framework (BeEF) - https://beefproject.com
 # See the file 'doc/COPYING' for copying permission
 #
 
@@ -20,18 +20,18 @@ module BeEF
       # @param [String] configuration_file Configuration file to be loaded,
       #        by default loads $root_dir/config.yaml
       def initialize(config)
-        raise TypeError, "'config' needs to be a string" unless config.string?
+        raise TypeError, "'config' needs to be a string" unless config.is_a?(String)
         raise TypeError, "Configuration file '#{config}' cannot be found" unless File.exist? config
 
         begin
-          #open base config
+          # open base config
           @config = load(config)
-          # set default value if key? does not exist
           @config.default = nil
           @@config = config
-        rescue => e
+        rescue StandardError => e
           print_error "Fatal Error: cannot load configuration file '#{config}' : #{e.message}"
-          print_error e.backtrace
+          print_more e.backtrace
+          exit(1)
         end
 
         @@instance = self
@@ -41,12 +41,8 @@ module BeEF
       # @param [String] file YAML file to be loaded
       # @return [Hash] YAML formatted hash
       def load(file)
-        return nil unless File.exist? file
-        raw = File.read file
-        YAML.safe_load raw
-      rescue => e
-        print_debug "Unable to load configuration file '#{file}' : #{e.message}"
-        print_error e.backtrace
+        return nil unless File.exist?(file)
+        YAML.safe_load(File.binread(file))
       end
 
       #
@@ -56,7 +52,7 @@ module BeEF
         if @config.empty?
           print_error 'Configuration file is empty'
           return
-	end
+        end
 
         if @config['beef'].nil?
           print_error "Configuration file is malformed: 'beef' is nil"
@@ -75,10 +71,12 @@ module BeEF
 
         return unless validate_public_config_variable?(@config)
 
+        # Note for developers:
+        # The configuration path 'beef.http.public_port' is deprecated.
+        # Use the new format for public_port variables as described in the BeEF project documentation.
+        # Refer to the BeEF configuration guide for the web server configuration details:
+        # https://github.com/beefproject/beef/wiki/Configuration#web-server-configuration
         if @config['beef']['http']['public_port']
-          print_error 'Config path beef.http.public_port is deprecated.'
-          print_error 'Please use the new format for public variables found'
-          print_error 'https://github.com/beefproject/beef/wiki/Configuration#web-server-configuration'
           return
         end
 
@@ -136,17 +134,17 @@ module BeEF
       def public_enabled?
         !get('beef.http.public.host').nil?
       end
-      
+
       #
       # Returns the beef protocol that is used by external resources
       # e.g. hooked browsers
       def beef_proto
-        if public_enabled? && public_https_enabled? then
-          return 'https'
+        if public_enabled? && public_https_enabled?
+          'https'
         elsif public_enabled? && !public_https_enabled?
-          return 'http'
+          'http'
         elsif !public_enabled?
-          return local_proto
+          local_proto
         end
       end
 
@@ -157,7 +155,7 @@ module BeEF
         "#{beef_proto}://#{beef_host}:#{beef_port}"
       end
 
-      # Returns the hool path value stored in the config file
+      # Returns the hook path value stored in the config file
       #
       # @return [String] hook file path
       def hook_file_path
@@ -201,6 +199,7 @@ module BeEF
           hash[k]
         end
         return nil if subhash.nil?
+
         subhash.key?(lastkey) ? subhash[lastkey] : nil
       end
 
@@ -215,7 +214,7 @@ module BeEF
         return false if subkeys.empty?
 
         hash = { subkeys.shift.to_s => value }
-        subkeys.each { |v| hash = {v.to_s => hash} }
+        subkeys.each { |v| hash = { v.to_s => hash } }
         @config = @config.deep_merge hash
         true
       end
@@ -231,7 +230,7 @@ module BeEF
 
         lastkey = subkeys.pop
         hash = @config
-        subkeys.each {|v| hash = hash[v] }
+        subkeys.each { |v| hash = hash[v] }
         hash.delete(lastkey).nil? ? false : true
       end
 
@@ -257,8 +256,8 @@ module BeEF
       #
       def load_modules_config
         set('beef.module', {})
-        # support nested sub-categories, like browser/hooked_domain/ajax_fingerprint
-        module_configs = File.join("#{$root_dir}/modules/**", "config.yaml")
+        # support nested sub-categories, like browser/hooked_origin/ajax_fingerprint
+        module_configs = File.join("#{$root_dir}/modules/**", 'config.yaml')
         Dir.glob(module_configs) do |cf|
           y = load(cf)
           if y.nil?
@@ -279,14 +278,15 @@ module BeEF
 
       private
 
+      # Note for developers:
+      # The configuration path 'beef.http.public' is deprecated.
+      # Use the new format for public variables as described in the BeEF project documentation.
+      # Refer to the BeEF configuration guide for the web server configuration details:
+      # https://github.com/beefproject/beef/wiki/Configuration#web-server-configuration
       def validate_public_config_variable?(config)
-        return true if (config['beef']['http']['public'].is_a?(Hash) || 
-                        config['beef']['http']['public'].is_a?(NilClass))
+        return true if config['beef']['http']['public'].is_a?(Hash) ||
+                       config['beef']['http']['public'].is_a?(NilClass)
 
-
-        print_error 'Config path beef.http.public is deprecated.'
-        print_error 'Please use the new format for public variables found'
-        print_error 'https://github.com/beefproject/beef/wiki/Configuration#web-server-configuration'
         false
       end
     end

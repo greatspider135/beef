@@ -1,6 +1,6 @@
 #
-# Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-# Browser Exploitation Framework (BeEF) - http://beefproject.com
+# Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+# Browser Exploitation Framework (BeEF) - https://beefproject.com
 # See the file 'doc/COPYING' for copying permission
 #
 module BeEF
@@ -14,7 +14,7 @@ module BeEF
 
           unless @config.key?('host') || @config.key?('uri') || @config.key?('port') ||
                  @config.key?('user') || @config.key?('pass')
-            print_error 'There is not enough information to initalize Metasploit connectivity at this time'
+            print_error 'There is not enough information to initialize Metasploit connectivity at this time'
             print_error 'Please check your options in config.yaml to verify that all information is present'
             BeEF::Core::Configuration.instance.set('beef.extension.metasploit.enabled', false)
             BeEF::Core::Configuration.instance.set('beef.extension.metasploit.loaded', false)
@@ -102,7 +102,7 @@ module BeEF
             sleep 1
             code = http.head(path, headers).code.to_i
             print_debug "[Metasploit] Success - HTTP response: #{code}"
-          rescue StandardError => e
+          rescue StandardError
             retry if (retries -= 1).positive?
           end
 
@@ -137,7 +137,7 @@ module BeEF
           res = super(@config['user'], @config['pass'])
 
           unless res
-            print_error '[Metasploit] Could not authenticate to Metasploit RPC sevrice.'
+            print_error '[Metasploit] Could not authenticate to Metasploit RPC service.'
             return false
           end
 
@@ -185,6 +185,9 @@ module BeEF
           get_lock
           res = call('module.info', 'exploit', name)
           res || {}
+        rescue StandardError => e
+          print_error "Call module.info for module #{name} failed: #{e.message}"
+          {}
         ensure
           release_lock
         end
@@ -193,6 +196,9 @@ module BeEF
           get_lock
           res = call('module.compatible_payloads', name)
           res || {}
+        rescue StandardError => e
+          print_error "Call module.compatible_payloads for module #{name} failed: #{e.message}"
+          {}
         ensure
           release_lock
         end
@@ -201,6 +207,9 @@ module BeEF
           get_lock
           res = call('module.options', 'exploit', name)
           res || {}
+        rescue StandardError => e
+          print_error "Call module.options for module #{name} failed: #{e.message}"
+          {}
         ensure
           release_lock
         end
@@ -211,6 +220,9 @@ module BeEF
           return {} unless res || res['modules']
 
           res['modules']
+        rescue StandardError => e
+          print_error "Call module.payloads failed: #{e.message}"
+          {}
         ensure
           release_lock
         end
@@ -222,6 +234,7 @@ module BeEF
 
           res
         rescue StandardError => e
+          print_error "Call module.options for payload #{name} failed: #{e.message}"
           {}
         ensure
           release_lock
@@ -234,7 +247,7 @@ module BeEF
           res['uri'] = "#{proto}://#{@config['callback_host']}:#{opts['SRVPORT']}/#{opts['URIPATH']}"
           res
         rescue StandardError => e
-          print_error "Exploit failed for #{exploit} \n"
+          print_error "Exploit failed for #{exploit}\n#{e.message}"
           false
         ensure
           release_lock
@@ -248,7 +261,7 @@ module BeEF
           get_lock
           call('module.execute', 'auxiliary', 'server/browser_autopwn', opts)
         rescue StandardError => e
-          print_error 'Failed to launch autopwn'
+          print_error "Failed to launch browser_autopwn: #{e.message}"
           false
         ensure
           release_lock

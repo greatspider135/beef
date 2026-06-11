@@ -1,7 +1,11 @@
 require 'rest-client'
 
+#
+# Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+# Browser Exploitation Framework (BeEF) - https://beefproject.com
+# See the file 'doc/COPYING' for copying permission
+#
 RSpec.describe 'BeEF Extension WebRTC' do
-
   before(:all) do
     @config = BeEF::Core::Configuration.instance
     @config.load_extensions_config

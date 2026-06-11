@@ -1,6 +1,6 @@
 #
-# Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-# Browser Exploitation Framework (BeEF) - http://beefproject.com
+# Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+# Browser Exploitation Framework (BeEF) - https://beefproject.com
 # See the file 'doc/COPYING' for copying permission
 #
 
@@ -12,8 +12,8 @@ module BeEF
     attr_writer :logger
 
     def logger
-        @logger ||= Logger.new("#{$home_dir}/beef.log").tap do |log|
-        log.progname = self.name
+      @logger ||= Logger.new("#{$home_dir}/beef.log").tap do |log|
+        log.progname = name
         log.level = Logger::WARN
       end
     end

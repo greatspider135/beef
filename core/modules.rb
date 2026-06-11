@@ -1,11 +1,10 @@
 #
-# Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-# Browser Exploitation Framework (BeEF) - http://beefproject.com
+# Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+# Browser Exploitation Framework (BeEF) - https://beefproject.com
 # See the file 'doc/COPYING' for copying permission
 #
 module BeEF
   module Modules
-
     # Return configuration hashes of all modules that are enabled
     # @return [Array] configuration hashes of all enabled modules
     def self.get_enabled

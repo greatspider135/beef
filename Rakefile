@@ -1,27 +1,96 @@
 #
-# Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-# Browser Exploitation Framework (BeEF) - http://beefproject.com
+# Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+# Browser Exploitation Framework (BeEF) - https://beefproject.com
 # See the file 'doc/COPYING' for copying permission
 #
-require 'yaml'
-require 'bundler/setup'
-load 'tasks/otr-activerecord.rake'
-#require 'pry-byebug'
-
-
-task :default => ["spec"]
-
-desc 'Generate API documentation to doc/rdocs/index.html'
-task :rdoc do
-  Rake::Task['rdoc:rerdoc'].invoke
-end
-
-## RSPEC
 require 'rspec/core/rake_task'
 
-RSpec::Core::RakeTask.new(:spec) do |task|
+task default: ['short']
+
+# Run rspec with an explicit file list (avoids envs that only run 557).
+# Note: when run with the full file list, module specs load after extensions; the Dns stub in
+# network_spec must not run before the real Dns extension (dns_spec) or you get "superclass mismatch".
+desc 'Run short spec suite (all specs except browserstack/long)'
+task :short do
+  short_files = Dir[File.join(Dir.pwd, 'spec', '**', '*_spec.rb')].sort
+  $stderr.puts "[rake short] spec files=#{short_files.size}"
+  abort '[rake short] Expected 60+ spec files; check you are in project root.' if short_files.size < 60
+  opts = [
+    '--tag', '~run_on_browserstack',
+    '--tag', '~run_on_long_tests'
+  ]
+  ok = system('bundle', 'exec', 'rspec', *short_files, *opts)
+  abort 'rspec failed' unless ok
+end
+
+# Legacy namespace for backward compatibility
+namespace :coverage do
+  task :modules => 'coverage_modules'
+  task :core => 'coverage_core'
+  task :extensions => 'coverage_extensions'
+  task :all => 'coverage'
+end
+
+# Base spec tasks
+RSpec::Core::RakeTask.new(:spec) do |t|
+  t.pattern = 'spec/**/*_spec.rb'
+  t.rspec_opts = ['--tag', '~run_on_browserstack', '--tag', '~run_on_long_tests']
+end
+
+RSpec::Core::RakeTask.new(:spec_core) do |t|
+  t.pattern = 'spec/beef/core/**/*_spec.rb'
+  t.rspec_opts = ['--tag', '~run_on_browserstack', '--tag', '~run_on_long_tests']
+end
+
+RSpec::Core::RakeTask.new(:spec_extensions) do |t|
+  t.pattern = 'spec/beef/extensions/**/*_spec.rb'
+  t.rspec_opts = ['--tag', '~run_on_browserstack', '--tag', '~run_on_long_tests']
+end
+
+RSpec::Core::RakeTask.new(:spec_modules) do |t|
+  t.pattern = 'spec/beef/modules/**/*_spec.rb'
+  t.rspec_opts = ['--tag', '~run_on_browserstack', '--tag', '~run_on_long_tests']
+end
+
+# Coverage tasks using environment variables for cleaner configuration
+desc 'Run all specs with complete coverage tracking'
+task :coverage do
+  ENV['COVERAGE'] = 'all'
+  Rake::Task['spec'].invoke
+end
+
+desc 'Run core specs with coverage'
+task :coverage_core do
+  ENV['COVERAGE'] = 'core'
+  Rake::Task['spec_core'].invoke
+end
+
+desc 'Run extensions specs with coverage'
+task :coverage_extensions do
+  ENV['COVERAGE'] = 'extensions'
+  Rake::Task['spec_extensions'].invoke
+end
+
+desc 'Run modules specs with coverage'
+task :coverage_modules do
+  ENV['COVERAGE'] = 'modules'
+  Rake::Task['spec_modules'].invoke
+end
+
+# Alias for backward compatibility
+task :coverage_complete => :coverage
+task :coverage_all => :coverage
+
+RSpec::Core::RakeTask.new(:long) do |task|
   task.rspec_opts = ['--tag ~run_on_browserstack']
 end
+
+RSpec::Core::RakeTask.new(:long_only) do |task|
+  task.rspec_opts = ['--tag ~run_on_browserstack', '--tag run_on_long_tests']
+end
+
+################################
+# Browserstack
 
 RSpec::Core::RakeTask.new(:browserstack) do |task|
   task.rspec_opts = ['--tag run_on_browserstack']
@@ -55,7 +124,7 @@ namespace :ssl do
     end
     Rake::Task['ssl:replace'].invoke
   end
-
+  
   desc 'Re-generate SSL certificate'
   task :replace do
     if File.file?('/usr/local/bin/openssl')
@@ -68,6 +137,14 @@ namespace :ssl do
     end
     IO.popen([path, 'req', '-new', '-newkey', 'rsa:4096', '-sha256', '-x509', '-days', '3650', '-nodes', '-out', 'beef_cert.pem', '-keyout', 'beef_key.pem', '-subj', '/CN=localhost'], 'r+').read.to_s
   end
+end
+
+################################
+# Generate API documentation
+
+desc 'Generate API documentation to doc/rdocs/index.html'
+task :rdoc do
+  Rake::Task['rdoc:rerdoc'].invoke
 end
 
 ################################
@@ -87,15 +164,6 @@ namespace :rdoc do
     rd.options << '--all'
   end
 end
-
-
-################################
-# Install
-
-#task :install do
-#  sh "export BEEF_TEST=true"
-#end
-
 
 ################################
 # X11 set up
@@ -124,7 +192,6 @@ end
 @beef_process_id = nil;
 @beef_config_file = 'tmp/rk_beef_conf.yaml';
 
-
 task :beef_start => 'beef' do
   # read environment param for creds or use bad_fred
   test_user = ENV['TEST_BEEF_USER'] || 'bad_fred'
@@ -134,7 +201,7 @@ task :beef_start => 'beef' do
   config = YAML.safe_load(File.read('./config.yaml'))
   config['beef']['credentials']['user'] = test_user
   config['beef']['credentials']['passwd'] = test_pass
-  Dir.mkdir('tmp') unless Dir.exists?('tmp')
+  Dir.mkdir('tmp') unless Dir.exist?('tmp')
   File.open(@beef_config_file, 'w') { |f| YAML.dump(config, f) }
 
   # set the environment creds -- in case we're using bad_fred
@@ -197,61 +264,6 @@ end
 file '/tmp/msf-test/msfconsole' do
   puts "Installing MSF"
   sh "cd test;git clone https://github.com/rapid7/metasploit-framework.git /tmp/msf-test"
-end
-
-
-################################
-# Create Mac DMG File
-
-task :dmg do
-  puts "\nCreating Working Directory\n";
-  sh "mkdir dmg";
-  sh "mkdir dmg/BeEF";
-  sh "rsync * dmg/BeEF --exclude=dmg -r";
-  sh "ln -s /Applications dmg/";
-  puts "\nCreating DMG File\n"
-  sh "hdiutil create ./BeEF.dmg -srcfolder dmg -volname BeEF -ov";
-  puts "\nCleaning Up\n"
-  sh "rm -r dmg";
-  puts "\nBeEF.dmg created\n"
-end
-
-
-################################
-# Create CDE Package
-# This will download and make the CDE Executable and
-# gnereate a CDE Package in cde-package
-
-task :cde do
-  puts "\nCloning and Making CDE...";
-  sh "git clone git://github.com/pgbovine/CDE.git";
-  Dir.chdir "CDE";
-  sh "make";
-  Dir.chdir "..";
-  puts "\nCreating CDE Package...\n";
-  sh "bundle install"
-  Rake::Task['cde_beef_start'].invoke
-  Rake::Task['beef_stop'].invoke
-  puts "\nCleaning Up...\n";
-  sleep (2);
-  sh "rm -rf CDE";
-  puts "\nCDE Package Created...\n";
-end
-
-################################
-# CDE/BeEF environment set up
-
-@beef_process_id = nil;
-
-task :cde_beef_start => 'beef' do
-  printf "Starting CDE BeEF (wait 10 seconds)..."
-  @beef_process_id = IO.popen("./CDE/cde ruby beef -x 2> /dev/null", "w+")
-  delays = [2, 2, 1, 1, 1, 0.5, 0.5, 0.5, 0.3, 0.2, 0.1, 0.1, 0.1, 0.05, 0.05]
-  delays.each do |i| # delay for 10 seconds
-    printf '.'
-    sleep (i)
-  end
-  puts '.'
 end
 
 ################################

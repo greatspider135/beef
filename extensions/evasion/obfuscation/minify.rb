@@ -1,6 +1,6 @@
 #
-# Copyright (c) 2006-2021 Wade Alcorn - wade@bindshell.net
-# Browser Exploitation Framework (BeEF) - http://beefproject.com
+# Copyright (c) 2006-2026 Wade Alcorn - wade@bindshell.net
+# Browser Exploitation Framework (BeEF) - https://beefproject.com
 # See the file 'doc/COPYING' for copying permission
 #
 module BeEF
@@ -16,10 +16,10 @@ module BeEF
 
         def execute(input, config)
           opts = {
-            :output => {
+            output: {
               comments: :none
             },
-            :compress => {
+            compress: {
               # show warnings in debug mode
               warnings: (config.get('beef.debug') ? true : false),
               # remove dead code
@@ -31,9 +31,9 @@ module BeEF
             }
           }
           output = Uglifier.compile(input, opts)
-          print_debug "[OBFUSCATION - Minifier] JavaScript has been minified"
+          print_debug '[OBFUSCATION - Minifier] JavaScript has been minified'
           output
-        rescue => e
+        rescue StandardError => e
           print_error "[OBFUSCATION - Minifier] JavaScript couldn't be minified: #{e.messsage}"
           input
         end
@@ -41,4 +41,3 @@ module BeEF
     end
   end
 end
-
