@@ -111,6 +111,7 @@ GEM
     msgpack (1.8.0)
     mustermann (3.0.4)
       ruby2_keywords (~> 0.0.1)
+    mutex_m (0.3.0)
     net-protocol (0.2.2)
       timeout
     net-smtp (0.5.1)
@@ -292,8 +293,10 @@ GEM
     uri (1.1.1)
     webrick (1.9.2)
     websocket (1.2.11)
-    websocket-client-simple (0.6.1)
+    websocket-client-simple (0.9.0)
+      base64
       event_emitter
+      mutex_m
       websocket
     xmlrpc (0.3.4)
       rexml
@@ -353,7 +356,7 @@ DEPENDENCIES
   test-unit-full (~> 0.0.5)
   thin (~> 2.0)
   uglifier (~> 4.2)
-  websocket-client-simple (~> 0.6.1)
+  websocket-client-simple (~> 0.9.0)
   xmlrpc (~> 0.3.4)
 
 BUNDLED WITH
